@@ -59,11 +59,10 @@ model Dispositivo {
   modeloId       String
   usuarioId      String
 
-  pulgadas       Int?           // Esto puede ser opcional dependiendo del tipo de dispositivo
+  pulgadas       Int?           
   remito         String?
   comentario     String?
 
-  // Relaciones
   subtipo        SubtipoDispositivo? @relation(fields: [subtipoId], references: [id])
   lugar          Lugar          @relation(fields: [lugarId], references: [id])
   estado         Estado         @relation(fields: [estadoId], references: [id])
@@ -130,7 +129,6 @@ model Modelo {
   fabricanteId  String
   fabricante    Fabricante   @relation(fields: [fabricanteId], references: [id])
 
-  // Relación inversa
   dispositivos  Dispositivo[]
 
   createdAt     DateTime     @default(now())
