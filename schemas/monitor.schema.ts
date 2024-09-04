@@ -3,6 +3,9 @@ import { z } from "zod";
 export const monitorSchema = z.object({
   nro_inventario: z
     .string()
+    .regex(/^MO-\d+$/, {
+      message: "Debe comenzar con 'MO-' seguido de números",
+    })
     .min(1, { message: "El nro. de inventario es requerido" }),
   nro_serie: z.string().min(1, { message: "El nro. de serie es requerido" }),
   modeloId: z.string().min(1, { message: "El modelo es requerido" }),
