@@ -1,6 +1,12 @@
 "use client";
-import { addMonitor } from "@/actions/monitors.action";
+import { addMonitor } from "@/actions/device.action";
+import { deleteEntityData } from "@/actions/entitys.action";
+import { addMaker } from "@/actions/makers.action";
+import { addModels } from "@/actions/models.action";
+import { addPlace } from "@/actions/place.action";
+import { addState } from "@/actions/state.action";
 import { Combobox } from "@/components/combobox";
+import DialogForm from "@/components/dialog-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Form,
@@ -13,16 +19,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { monitorSchema } from "@/schemas/monitor.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Dispositivo, Fabricante, Modelo } from "@prisma/client";
+import { Modelo } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 const FormMonitor = ({ makers, places, states, models, subTypes }) => {
   const [filteredModels, setFilteredModels] = useState([]);
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransaction] = useTransition();
   const router = useRouter();
 
@@ -46,25 +52,29 @@ const FormMonitor = ({ makers, places, states, models, subTypes }) => {
   });
 
   const maker = form.watch("fabricanteId");
+  const prevMakerRef = useRef(maker);
+
   useEffect(() => {
     if (maker) {
       const filtered = models.filter(
         (model: Modelo) => model.fabricanteId === maker
       );
       setFilteredModels(filtered);
-      form.setValue("modeloId", "");
+      if (maker !== prevMakerRef.current) {
+        form.setValue("modeloId", "");
+        prevMakerRef.current = maker;
+      }
     } else {
       setFilteredModels([]);
     }
-  }, [maker]);
+  }, [maker, models]);
 
   const onSubmit = async (values: z.infer<typeof monitorSchema>) => {
-    setError(null);
     startTransaction(async () => {
       const response = await addMonitor(values);
 
       if (response?.error) {
-        setError(response.error);
+        toast.error("Error al enviar", { description: response.error });
       }
 
       if (response?.success) {
@@ -78,7 +88,6 @@ const FormMonitor = ({ makers, places, states, models, subTypes }) => {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="flex justify-between pt-8 gap-8">
           <div className="flex-1">
-            <FormMessage>{error}</FormMessage>
             <h3 className="text-center text-lg font-semibold">
               Informacion Tecnica
             </h3>
@@ -87,8 +96,8 @@ const FormMonitor = ({ makers, places, states, models, subTypes }) => {
                 control={form.control}
                 name="nro_inventario"
                 render={({ field }) => (
-                  <FormItem className="col-span-3">
-                    <FormLabel>Nro. Inventario</FormLabel>
+                  <FormItem className="col-span-4">
+                    <FormLabel>Nro. Inventario (*)</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Ingrese el nro. de inventario"
@@ -104,8 +113,8 @@ const FormMonitor = ({ makers, places, states, models, subTypes }) => {
                 control={form.control}
                 name="nro_serie"
                 render={({ field }) => (
-                  <FormItem className="col-span-5">
-                    <FormLabel>Nro. Serie</FormLabel>
+                  <FormItem className="col-span-4">
+                    <FormLabel>Nro. Serie (*)</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Ingrese el nro. de serie"
@@ -122,8 +131,17 @@ const FormMonitor = ({ makers, places, states, models, subTypes }) => {
                 name="fabricanteId"
                 render={({ field }) => (
                   <FormItem className="col-span-4">
-                    <FormLabel>Fabricante</FormLabel>
-                    <Combobox name="fabricanteId" data={makers} />
+                    <FormLabel>Fabricante (*)</FormLabel>
+                    <div className="flex gap-1">
+                      <Combobox name="fabricanteId" data={makers} />
+                      <DialogForm
+                        field={field}
+                        label="Fabricante"
+                        onSubmit={addMaker}
+                        values={{ tipo: "monitor" }}
+                        deleteOption={deleteEntityData}
+                      />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -133,12 +151,22 @@ const FormMonitor = ({ makers, places, states, models, subTypes }) => {
                 name="modeloId"
                 render={({ field }) => (
                   <FormItem className="col-span-4">
-                    <FormLabel>Modelo</FormLabel>
-                    <Combobox
-                      name="modeloId"
-                      data={filteredModels}
-                      disabled={!maker}
-                    />
+                    <FormLabel>Modelo (*)</FormLabel>
+                    <div className="flex gap-1">
+                      <Combobox
+                        name="modeloId"
+                        data={filteredModels}
+                        disabled={!maker}
+                      />
+                      <DialogForm
+                        label="Modelo"
+                        field={field}
+                        onSubmit={addModels}
+                        deleteOption={deleteEntityData}
+                        values={{ fabricanteId: maker }}
+                        disabled={!maker}
+                      />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -148,7 +176,7 @@ const FormMonitor = ({ makers, places, states, models, subTypes }) => {
                 name="subtipoId"
                 render={({ field }) => (
                   <FormItem className="col-span-4">
-                    <FormLabel>Tipo</FormLabel>
+                    <FormLabel>Tipo (*)</FormLabel>
                     <Combobox name="subtipoId" data={subTypes} />
                     <FormMessage />
                   </FormItem>
@@ -159,7 +187,7 @@ const FormMonitor = ({ makers, places, states, models, subTypes }) => {
                 name="pulgadas"
                 render={({ field }) => (
                   <FormItem className="col-span-4">
-                    <FormLabel>Pulgadas</FormLabel>
+                    <FormLabel>Pulgadas (*)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -183,8 +211,20 @@ const FormMonitor = ({ makers, places, states, models, subTypes }) => {
                 name="lugarId"
                 render={({ field }) => (
                   <FormItem className="col-span-5">
-                    <FormLabel>Lugar</FormLabel>
-                    <Combobox name="lugarId" data={places} />
+                    <FormLabel>Lugar (*)</FormLabel>
+                    <div className="flex gap-1">
+                      <Combobox
+                        name="lugarId"
+                        data={places}
+                        onSubmit={addPlace}
+                      />
+                      <DialogForm
+                        label="Lugar"
+                        onSubmit={addPlace}
+                        field={field}
+                        deleteOption={deleteEntityData}
+                      />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -211,8 +251,16 @@ const FormMonitor = ({ makers, places, states, models, subTypes }) => {
                 name="estadoId"
                 render={({ field }) => (
                   <FormItem className="col-span-5">
-                    <FormLabel>Estado</FormLabel>
-                    <Combobox name="estadoId" data={states} />
+                    <FormLabel>Estado (*)</FormLabel>
+                    <div className="flex gap-1">
+                      <Combobox name="estadoId" data={states} />
+                      <DialogForm
+                        label="Estado"
+                        field={field}
+                        deleteOption={deleteEntityData}
+                        onSubmit={addState}
+                      />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

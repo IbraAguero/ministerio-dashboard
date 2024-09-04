@@ -17,11 +17,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-//import ModalFormIngredient from "@/app/ingredientes/ui/ModalFormIngredient";
 
-export function Combobox({ name, data, disabled }) {
-  console.log(data);
+interface ComboboxProps {
+  name: string;
+  data: Array<{ id: string; nombre: string }>;
+  disabled?: boolean;
+}
 
+export function Combobox({ name, data, disabled = false }: ComboboxProps) {
   const { control } = useFormContext();
   const {
     field: { value, onChange },
@@ -31,15 +34,6 @@ export function Combobox({ name, data, disabled }) {
   });
 
   const [open, setOpen] = React.useState(false);
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [openModal, setOpenModal] = React.useState(false);
-
-  const handleOpenModal = () => {
-    setOpenModal(true);
-  };
-  const closeModal = () => {
-    setOpenModal(false);
-  };
 
   return (
     <>
@@ -60,19 +54,10 @@ export function Combobox({ name, data, disabled }) {
         </PopoverTrigger>
         <PopoverContent className="w-[200px] p-0">
           <Command>
-            <CommandInput
-              placeholder="Buscar elemento..."
-              className="h-9"
-              value={searchTerm}
-              onValueChange={setSearchTerm}
-            />
+            <CommandInput placeholder="Buscar elemento..." className="h-9" />
             <CommandList>
               <CommandEmpty className="py-4 text-center text-sm ">
-                <span
-                  //href="/ingredientes/agregar"
-                  onClick={handleOpenModal}
-                  className="cursor-pointer hover:text-neutral-300"
-                >{`Agregar "${searchTerm}"`}</span>
+                <span>No se encontro el elemento</span>
               </CommandEmpty>
               <CommandGroup>
                 {data.map((element) => (
@@ -98,14 +83,6 @@ export function Combobox({ name, data, disabled }) {
           </Command>
         </PopoverContent>
       </Popover>
-      {/* {openModal && (
-        <ModalFormIngredient
-          ingredient={{ name: searchTerm }}
-          isDialog={true}
-          open={openModal}
-          handleClose={closeModal}
-        />
-      )} */}
     </>
   );
 }
