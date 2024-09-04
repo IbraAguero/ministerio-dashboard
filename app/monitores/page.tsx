@@ -2,11 +2,10 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
 import Link from "next/link";
-import { getMonitors } from "@/actions/monitors.action";
+import { getDevices } from "@/actions/device.action";
 
 const MonitorsPage = async () => {
-  const monitors = await getMonitors();
-  console.log(monitors);
+  const monitors = await getDevices("monitor");
 
   return (
     <section className="container mt-10 p-6">
